@@ -1,0 +1,157 @@
+<?php
+/*
+بدايتاًهذة دالة مهمتها جلب كافة المستخدمين
+باختصار هى دالة استعلام وجلب المستخدمين فى مصفوفة
+وفية براميتر ووضعت له عنصر واحد وتركتة خالى 
+*/
+function www_users_get($extra = ''){
+	//هذة التعليمة مهمتها استدعاء متغير خارج الداله وخارج الملف نفسة
+global $www_con;
+/*
+دالة sprintf 
+تستخدم هذة الداله فى انشاء الاستعلام لانها تساعد على وضع نص بداخلة متغيرات وتستبدل هذة المتغيرات باشياء اخرى
+*/
+$query = sprintf("SELECT * FROM `users` %s", $extra);
+/*
+هذا المتغيريتحقق من استعلام عن المتغير الاول
+
+*/
+$qresult = mysql_query($query);
+// هنا شرط النحقق
+if (!$qresult) 
+	return null;
+//متغير ياخذ قيم الاستعلام ويجلب عدد الصفوف الناتجة من الاستعلام
+$rcount = mysql_num_rows($qresult);
+//شرط ناتج الاستعلام
+if($rcount == 0)
+	return null;
+//متغير لانشاء مصفوفة
+$users = array();
+//
+for ($i= 0; $i < $rcount ; $i++) 
+	$users[count($users)] = mysql_fetch_object($qresult);
+mysql_free_result($qresult);
+return $users;
+
+}
+function www_users_get_id($uo_id)
+{
+	$id = (int)$uo_id;
+	if ($id == 0) {
+		return null;
+	}
+$result = www_users_get('WHERE `id` ='.$uo_id);
+if ($result == null) 
+	return null;
+	$user = $result[0];
+	return $user;
+
+}
+function www_users_add($name,$password,$email,$admin){
+	global $www_con;
+	if (empty($name) || (empty($password)) || (empty($email))) 
+		return false;
+		$n_email = mysql_real_escape_string(strip_tags($email,$www_con));
+		if(!filter_var($n_email,FILTER_VALIDATE_EMAIL))
+			return false;
+
+		$n_name = mysql_real_escape_string(strip_tags($name,$www_con));
+		$n_password = md5(mysql_real_escape_string(strip_tags($password,$www_con)));
+
+		$n_admin = (int)$admin;
+		if(($n_admin != 0)&& ($n_admin != 1))
+			$n_admin = 0;
+		$query = sprintf("INSERT INTO `users` VALUES(NULL,'%s','%s','%s',%d)",
+			$n_name,$n_password,$n_email,$n_admin);
+		//echo $query;
+		$qresult = mysql_query($query);
+		if (!$qresult) 
+			return false;
+			return true;	
+}
+function www_users_delete($uo_id){
+$id = (int)$uo_id;
+	if ($id == 0) 
+		return false;
+
+		$query = sprintf("DELETE FROM `users` WHERE `id` = %d",$id);
+		$qresult = mysql_query($query);
+		if (!$qresult) 
+			return false;
+			return true;
+}
+function www_users_update($uo_id,$name = null,$password = null,$email = null,$admin = -1)
+{
+	global $www_con;
+	$id = (int)$uo_id;
+	if($id == 0) 
+		return false;
+
+	$n_admin = (int)$admin;
+	$user = www_users_get_id($id);
+	if (!$user) 
+	return false;
+
+	if ((empty($name)) && (empty($password)) && (empty($email)) && ($user->admin == $n_admin)) 
+		return false;
+
+	$fields = array();
+	$query = ' UPDATE `users` SET ';
+
+	if (!empty($email))
+	 {
+		$n_email = mysql_real_escape_string(strip_tags($email),$www_con);
+		if(!filter_var($n_email,FILTER_VALIDATE_EMAIL))
+			return false;
+		 $fields[count($fields)] = "`email` = '$n_email'";
+	} 
+	if (!empty($name)) 
+	{
+		$n_name = mysql_real_escape_string(strip_tags($name,$www_con));
+		$fields[count($fields)] = "`name` = '$n_name'";
+	} 
+	if (!empty($password))
+	 {
+		$n_password = md5(mysql_real_escape_string(strip_tags($password,$www_con)));
+		$fields[count($fields)] = "`password` = '$n_password'";
+	} 
+	if($n_admin == -1)
+	   $n_admin = $user->admin;
+	$fields[count($fields)] = "`admin` = '$n_admin'";
+	
+	$fcount = count($fields);
+	if ($fcount == 1) 
+	{
+		$query .= $fields[0].'WHERE `id` = '.$id;
+		
+		$qresult = mysql_query($query);
+		if (!$qresult) 
+			return false;
+		else
+			return true;
+	}
+for ($i = 0; $i < $fcount ; $i++)
+ { 
+	$query .= $fields[$i];
+	if ($i != ($fcount -1)) 
+	$query .= ' , ';
+}
+
+	$query .= ' WHERE `id` = '.$id;
+	$qresult = mysql_query($query);
+		if (!$qresult) 
+			return false;
+		else
+			return true;
+}
+
+
+include 'con_db.php';
+// $add = www_users_add('mohammed','124578','kimo@facebook.com',1);
+
+  $result = www_users_update(5,'ElTop','12ww00','abo_el3zm@gmail.net',0);
+  //www_db_close();
+ if ($result) {
+	echo "succes";
+}
+?>
